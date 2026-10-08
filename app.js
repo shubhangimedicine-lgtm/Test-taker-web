@@ -46,6 +46,18 @@
     var m = Math.floor(s / 60), r = s % 60;
     return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r;
   }
+  function ask(msg, yes) {
+    var ov = el('div', { class: 'ov' });
+    function close() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.appendChild(el('div', { class: 'dlg', role: 'dialog', 'aria-modal': 'true' }, [
+      el('p', { text: msg }),
+      el('div', { class: 'row' }, [
+        el('button', { text: 'Yes', onclick: function () { close(); yes(); } }),
+        el('button', { class: 'ghost', text: 'Cancel', onclick: close })
+      ])
+    ]));
+    document.body.appendChild(ov);
+  }
   function clear() { while ($app.firstChild) $app.removeChild($app.firstChild); }
   function stopTick() { if (tick) { clearInterval(tick); tick = null; } $timer.classList.add('hidden'); }
   function blockScore(b) {
@@ -96,12 +108,12 @@
     var foot = el('div', { class: 'card row sp', style: 'margin-top:16px' }, [
       el('span', { class: 'mute', text: doneCount + ' of ' + blocks.length + ' blocks completed' }),
       el('div', { class: 'row' }, [
-        el('button', { class: 'ghost', text: 'Reset all', onclick: function () { if (confirm('Erase all progress and answers?')) { S = fresh(); save(); home(); } } }),
+        el('button', { class: 'ghost', text: 'Reset all', onclick: function () { ask('Erase all progress and answers?', function () { S = fresh(); save(); home(); }); } }),
         el('button', {
           text: doneCount === blocks.length ? 'See score & answer key' : 'End test & see score',
           onclick: function () {
-            if (doneCount < blocks.length && !confirm('Not all blocks are finished. Unanswered / unattempted questions will count as incorrect. Continue?')) return;
-            finishAll();
+            if (doneCount < blocks.length) ask('Not all blocks are finished. Unanswered or unattempted questions will count as incorrect. Continue?', finishAll);
+            else finishAll();
           }
         })
       ])
@@ -196,6 +208,18 @@
     ]));
     if (q.img) card.appendChild(el('img', { class: 'qimg', src: q.img, alt: 'Figure for question ' + (view.idx + 1) }));
     card.appendChild(el('p', { class: 'qtext', text: q.q }));
+    if (q.table) {
+      var tw = el('div', { class: 'tw' });
+      var tb = el('table', { class: 't' });
+      var th = el('tr', {}); q.table.cols.forEach(function (c) { th.appendChild(el('th', { text: c })); });
+      tb.appendChild(th);
+      q.table.rows.forEach(function (r) {
+        var tr = el('tr', {}); r.forEach(function (c, i) { tr.appendChild(el('td', { text: c, style: i === 0 ? 'text-align:left' : '' })); });
+        tb.appendChild(tr);
+      });
+      tw.appendChild(tb); card.appendChild(tw);
+    }
+    if (q.q2) card.appendChild(el('p', { class: 'qtext', text: q.q2 }));
 
     function pick(n) {
       if (st.answers[q.id] === n) delete st.answers[q.id]; else st.answers[q.id] = n;
@@ -237,14 +261,14 @@
     var right = el('div', { class: 'row' });
     if (strict) {
       right.appendChild(el('button', { text: last ? 'Finish block' : 'Next →', onclick: function () {
-        if (last) { if (confirm('Finish this block?')) endBlock(b, false); return; }
+        if (last) { ask('Finish this block?', function () { endBlock(b, false); }); return; }
         st.idx++; st.qEndAt = Date.now() + SEC_PER_Q * 1000; view.idx = st.idx; save(); render(); onTick();
       } }));
     } else {
       if (!last) right.appendChild(el('button', { text: 'Next →', onclick: function () { view.idx++; render(); } }));
       right.appendChild(el('button', { class: last ? '' : 'ghost', text: 'Finish block', onclick: function () {
         var un = bq.filter(function (x) { return st.answers[x.id] === undefined; }).length;
-        if (confirm(un ? un + ' question(s) unanswered. Finish block anyway?' : 'Finish this block?')) endBlock(b, false);
+        ask(un ? un + ' question(s) unanswered. Finish block anyway?' : 'Finish this block?', function () { endBlock(b, false); });
       } }));
     }
     ctl.appendChild(left); ctl.appendChild(right);
@@ -316,7 +340,7 @@
     sum.appendChild(bsum);
     sum.appendChild(el('div', { class: 'row', style: 'margin-top:14px' }, [
       el('button', { class: 'ghost', text: 'Back to blocks', onclick: home }),
-      el('button', { class: 'ghost', text: 'Retake everything', onclick: function () { if (confirm('Erase all answers and start over?')) { S = fresh(); save(); home(); } } })
+      el('button', { class: 'ghost', text: 'Retake everything', onclick: function () { ask('Erase all answers and start over?', function () { S = fresh(); save(); home(); }); } })
     ]));
     $app.appendChild(sum);
 
@@ -337,6 +361,34 @@
     });
     key.appendChild(t);
     $app.appendChild(key);
+
+    var exh = el('div', { class: 'card' }, [
+      el('h2', { text: 'Explanations' }),
+      el('p', { class: 'mute', text: 'Open any question to see the full explanation, why the other choices are wrong, and the key takeaway.' })
+    ]);
+    Q.forEach(function (q) {
+      if (!q.e) return;
+      var b = Math.floor((q.id - 1) / BLOCK_SIZE);
+      var a = bs(b).answers[q.id];
+      var d = el('details', { class: 'exp' });
+      d.appendChild(el('summary', {}, [
+        el('span', { class: a === q.a ? 'c' : a === undefined ? 'u' : 'w', text: (a === q.a ? '✓ ' : a === undefined ? '— ' : '✗ ') + 'Q' + q.id }),
+        el('span', { class: 'mute', text: ' ' + q.q.slice(0, 90) + (q.q.length > 90 ? '…' : '') })
+      ]));
+      var body = el('div', { class: 'exbody' });
+      if (q.img) body.appendChild(el('img', { class: 'qimg', src: q.img, alt: 'Figure for question ' + q.id }));
+      body.appendChild(el('p', { text: q.q }));
+      body.appendChild(el('p', {}, [el('b', { text: 'Correct answer: ' + L(q.a) + ') ' }), el('span', { text: q.cols ? q.o[q.a].join(' · ') : q.o[q.a] })]));
+      body.appendChild(el('p', { text: q.e.c }));
+      if (q.e.w.length) {
+        body.appendChild(el('h3', { text: 'Why the other choices are wrong' }));
+        q.e.w.forEach(function (w) { body.appendChild(el('p', { text: w })); });
+      }
+      body.appendChild(el('p', { class: 'obj' }, [el('b', { text: 'Educational objective: ' }), el('span', { text: q.e.o })]));
+      d.appendChild(body);
+      exh.appendChild(d);
+    });
+    $app.appendChild(exh);
     window.scrollTo(0, 0);
   }
 

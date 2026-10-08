@@ -47,3 +47,14 @@ table.key td.c{color:var(--ok);font-weight:600}table.key td.w{color:var(--bad);f
 .bsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:10px}
 .bsum div{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 @media(max-width:520px){main{padding:12px}.card{padding:14px}}
+
+.tw{overflow-x:auto;margin:0 0 14px}
+details.exp{border-top:1px solid var(--line);padding:8px 0}
+details.exp summary{cursor:pointer}
+details.exp summary .c{color:var(--ok);font-weight:600}details.exp summary .w{color:var(--bad);font-weight:600}details.exp summary .u{color:var(--mute);font-weight:600}
+.exbody{padding:8px 0 4px}.exbody h3{font-size:1rem;margin:14px 0 6px}.exbody p{margin:0 0 10px}.exbody .obj{border-top:1px solid var(--line);padding-top:10px}
+
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.dlg{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:20px;max-width:420px;width:100%}
+button:focus-visible,.opt:focus-within,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+img{max-width:100%}
