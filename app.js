@@ -3,7 +3,7 @@
 
   var Q = window.QUESTIONS;
   var BLOCK_SIZE = 20;
-  var SEC_PER_Q = 60;
+  var SEC_PER_Q = 75;
   var STORE = 'ttw-nbme-v1';
 
   var blocks = [];
@@ -69,8 +69,8 @@
 
     var modeBox = el('div', {}, [
       el('h2', { text: 'Timing mode' }),
-      modeOpt('pooled', 'Block timer (recommended)', 'Each block has one countdown of 60 s × number of questions (20 min for 20 questions). Move between questions freely and flag any to revisit.'),
-      modeOpt('strict', 'Strict 60 s per question', 'Every question has its own 60 s clock and auto-advances when it runs out. No going back.')
+      modeOpt('pooled', 'Block timer (recommended)', 'Each block has one countdown of ' + SEC_PER_Q + ' s × number of questions (' + (BLOCK_SIZE * SEC_PER_Q / 60) + ' min for ' + BLOCK_SIZE + ' questions). Move between questions freely and flag any to revisit.'),
+      modeOpt('strict', 'Strict ' + SEC_PER_Q + ' s per question', 'Every question has its own ' + SEC_PER_Q + ' s clock and auto-advances when it runs out. No going back.')
     ]);
     intro.appendChild(modeBox);
     $app.appendChild(intro);
